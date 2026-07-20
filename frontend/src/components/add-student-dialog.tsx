@@ -49,11 +49,9 @@ export function AddStudentDialog({ onAdd }: AddStudentDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Student/Staff
-        </Button>
+      <DialogTrigger render={<Button />}>
+        <Plus className="mr-2 h-4 w-4" />
+        Add Student/Staff
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
