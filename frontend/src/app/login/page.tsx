@@ -67,25 +67,25 @@ export default function LoginPage() {
 
           {/* Form Section */}
           <form onSubmit={handleLogin} className="space-y-6">
-            <div className="space-y-2 relative">
-              <label className="text-sm text-gray-500 font-medium absolute -top-2 left-0">Username</label>
+            <div className="flex flex-col space-y-1">
+              <label className="text-sm text-gray-500 font-medium">Username</label>
               <Input
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
-                className="border-0 border-b border-gray-300 rounded-none px-0 py-2 pt-6 shadow-none focus-visible:ring-0 focus-visible:border-orange-500 bg-transparent"
+                className="border-0 border-b border-gray-300 rounded-none px-0 py-2 shadow-none focus-visible:ring-0 focus-visible:border-orange-500 bg-transparent"
               />
             </div>
             
-            <div className="space-y-2 relative pt-4">
-              <label className="text-sm text-gray-500 font-medium absolute top-2 left-0">Password</label>
+            <div className="flex flex-col space-y-1 pt-2">
+              <label className="text-sm text-gray-500 font-medium">Password</label>
               <Input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="border-0 border-b border-gray-300 rounded-none px-0 py-2 pt-6 shadow-none focus-visible:ring-0 focus-visible:border-orange-500 bg-transparent"
+                className="border-0 border-b border-gray-300 rounded-none px-0 py-2 shadow-none focus-visible:ring-0 focus-visible:border-orange-500 bg-transparent"
               />
             </div>
 
