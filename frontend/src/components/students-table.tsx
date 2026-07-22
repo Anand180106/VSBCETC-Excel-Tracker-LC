@@ -7,8 +7,9 @@ import {
   getSortedRowModel,
   getFilteredRowModel,
   SortingState,
+  RowSelectionState,
 } from "@tanstack/react-table"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import {
   Table,
   TableBody,
@@ -18,7 +19,8 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
-import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { ArrowUpDown, ArrowUp, ArrowDown, Trash2 } from "lucide-react"
 
 const EditableCell = ({ getValue, row, column, table }: any) => {
   const initialValue = getValue()
@@ -39,7 +41,7 @@ const EditableCell = ({ getValue, row, column, table }: any) => {
       value={value || ""}
       onChange={(e) => setValue(e.target.value)}
       onBlur={onBlur}
-      className="h-8 border-0 bg-transparent focus-visible:ring-1 focus-visible:ring-primary w-full p-1"
+      className="h-8 border-0 bg-transparent focus-visible:ring-1 focus-visible:ring-primary w-full p-1 text-sm"
     />
   )
 }
@@ -47,15 +49,49 @@ const EditableCell = ({ getValue, row, column, table }: any) => {
 export function StudentsTable({ 
   data, 
   onUpdate, 
+  onDeleteSingle,
+  onSelectionChange,
   globalFilter,
+  departmentFilter = "ALL",
 }: { 
   data: any[];
   onUpdate: (id: number, field: string, value: any) => void;
+  onDeleteSingle?: (id: number) => void;
+  onSelectionChange?: (selectedIds: number[]) => void;
   globalFilter: string;
+  departmentFilter?: string;
 }) {
   const [sorting, setSorting] = useState<SortingState>([])
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
+
+  const displayData = useMemo(() => {
+    if (!departmentFilter || departmentFilter === "ALL") return data;
+    return data.filter(item => String(item.department || "").trim().toUpperCase() === departmentFilter.trim().toUpperCase());
+  }, [data, departmentFilter]);
 
   const columns = [
+    {
+      id: "select",
+      header: ({ table }: any) => (
+        <input
+          type="checkbox"
+          checked={table.getIsAllPageRowsSelected()}
+          onChange={table.getToggleAllPageRowsSelectedHandler()}
+          className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer accent-orange-500"
+        />
+      ),
+      cell: ({ row }: any) => (
+        <div className="px-1 flex items-center justify-center">
+          <input
+            type="checkbox"
+            checked={row.getIsSelected()}
+            disabled={!row.getCanSelect()}
+            onChange={row.getToggleSelectedHandler()}
+            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer accent-orange-500"
+          />
+        </div>
+      ),
+    },
     {
       accessorKey: "name",
       header: "Name",
@@ -87,6 +123,19 @@ export function StudentsTable({
       header: "Total",
     },
     {
+      id: "solved_today",
+      accessorFn: (row: any) => row.leetcode_stats?.solved_today || 0,
+      header: "Solved Today",
+      cell: ({ getValue }: any) => {
+        const val = getValue() || 0;
+        return (
+          <span className={`font-semibold px-2 py-0.5 rounded text-xs inline-block ${val > 0 ? "bg-emerald-500/15 text-emerald-600 font-bold dark:text-emerald-400" : "text-muted-foreground"}`}>
+            +{val}
+          </span>
+        )
+      }
+    },
+    {
       id: "easy",
       accessorFn: (row: any) => row.leetcode_stats?.easy_solved || 0,
       header: "Easy",
@@ -106,26 +155,53 @@ export function StudentsTable({
       accessorFn: (row: any) => row.leetcode_stats?.current_streak || 0,
       header: "Streak",
     },
+    {
+      id: "actions",
+      header: "Actions",
+      cell: ({ row }: any) => (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => onDeleteSingle && onDeleteSingle(row.original.id)}
+          className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30"
+          title="Delete User"
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      ),
+    },
   ]
 
   const table = useReactTable({
-    data,
+    data: displayData,
     columns,
     getCoreRowModel: getCoreRowModel(),
     onSortingChange: setSorting,
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    onRowSelectionChange: setRowSelection,
     state: {
       sorting,
       globalFilter,
+      rowSelection,
     },
     meta: {
       updateData: (rowIndex: number, columnId: string, value: any) => {
-        const studentId = data[rowIndex].id
-        onUpdate(studentId, columnId, value)
+        const studentId = displayData[rowIndex]?.id
+        if (studentId) {
+          onUpdate(studentId, columnId, value)
+        }
       },
     },
   })
+
+  // Notify parent of selected row IDs when selection changes
+  useEffect(() => {
+    if (!onSelectionChange) return
+    const selectedIndices = Object.keys(rowSelection).filter(key => rowSelection[key])
+    const selectedIds = selectedIndices.map(idx => displayData[Number(idx)]?.id).filter(Boolean) as number[]
+    onSelectionChange(selectedIds)
+  }, [rowSelection, displayData])
 
   return (
     <div className="rounded-md border">

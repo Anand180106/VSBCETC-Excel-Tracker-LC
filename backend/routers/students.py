@@ -86,6 +86,14 @@ def delete_student(student_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"detail": "Student deleted"}
 
+@router.post("/bulk-delete")
+def bulk_delete_students(student_ids: List[int], db: Session = Depends(get_db)):
+    if not student_ids:
+        return {"deleted": 0}
+    deleted_count = db.query(models.Student).filter(models.Student.id.in_(student_ids)).delete(synchronize_session=False)
+    db.commit()
+    return {"deleted": deleted_count}
+
 @router.post("/bulk-import", response_model=schemas.BulkImportResponse)
 def bulk_import_students(students: List[schemas.StudentCreate], db: Session = Depends(get_db)):
     successful = 0

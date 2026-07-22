@@ -4,6 +4,7 @@ from datetime import datetime
 
 class LeetCodeStatsBase(BaseModel):
     total_solved: int = 0
+    solved_today: int = 0
     easy_solved: int = 0
     medium_solved: int = 0
     hard_solved: int = 0

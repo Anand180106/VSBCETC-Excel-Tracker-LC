@@ -9,6 +9,9 @@ import { useState, useEffect } from "react"
 import Papa from "papaparse"
 import { useRouter } from "next/navigation"
 
+import { exportStyledExcelReport } from "@/lib/excel-export"
+import { AnalyticsDashboard } from "@/components/analytics-dashboard"
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
 const getAuthHeaders = () => {
@@ -25,6 +28,8 @@ export default function Dashboard() {
   const queryClient = useQueryClient()
   const router = useRouter()
   const [globalFilter, setGlobalFilter] = useState("")
+  const [departmentFilter, setDepartmentFilter] = useState("ALL")
+  const [selectedIds, setSelectedIds] = useState<number[]>([])
 
   useEffect(() => {
     const token = localStorage.getItem("token")
@@ -52,6 +57,26 @@ export default function Dashboard() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["students"] })
+    }
+  })
+
+  const deleteStudentMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return axios.delete(`${API_URL}/students/${id}`, { headers: getAuthHeaders() })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["students"] })
+      setSelectedIds([])
+    }
+  })
+
+  const bulkDeleteStudentsMutation = useMutation({
+    mutationFn: async (ids: number[]) => {
+      return axios.post(`${API_URL}/students/bulk-delete`, ids, { headers: getAuthHeaders() })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["students"] })
+      setSelectedIds([])
     }
   })
 
@@ -87,6 +112,19 @@ export default function Dashboard() {
     updateStudentMutation.mutate({ id, field, value })
   }
 
+  const handleDeleteSingle = (id: number) => {
+    if (window.confirm("Are you sure you want to delete this user?")) {
+      deleteStudentMutation.mutate(id)
+    }
+  }
+
+  const handleDeleteSelected = () => {
+    if (selectedIds.length === 0) return
+    if (window.confirm(`Are you sure you want to delete ${selectedIds.length} selected user(s)?`)) {
+      bulkDeleteStudentsMutation.mutate(selectedIds)
+    }
+  }
+
   const handleImport = (data: any[]) => {
     importStudentsMutation.mutate(data)
   }
@@ -94,6 +132,10 @@ export default function Dashboard() {
   const handleAddStudent = (data: any) => {
     addStudentMutation.mutate(data)
   }
+
+  const departments = Array.from(
+    new Set((students || []).map((s: any) => s.department).filter(Boolean))
+  ) as string[]
 
   const handleExport = () => {
     if (!students) return
@@ -104,6 +146,7 @@ export default function Dashboard() {
       Year: s.year,
       'LeetCode ID': s.leetcode_username,
       Total: s.leetcode_stats?.total_solved || 0,
+      'Solved Today': s.leetcode_stats?.solved_today || 0,
       Easy: s.leetcode_stats?.easy_solved || 0,
       Medium: s.leetcode_stats?.medium_solved || 0,
       Hard: s.leetcode_stats?.hard_solved || 0,
@@ -127,19 +170,32 @@ export default function Dashboard() {
   students?.forEach((s: any) => {
       if (s.leetcode_stats) {
           totalSolved += s.leetcode_stats.total_solved || 0
+          totalToday += s.leetcode_stats.solved_today || 0
       }
   })
 
   return (
-    <div className="flex-1 space-y-4 p-8 pt-6">
-      <div className="flex items-center justify-between space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+    <div className="flex-1 space-y-6 p-8 pt-6 bg-slate-50/50 dark:bg-background min-h-screen">
+      <div className="flex items-center justify-between space-y-2 border-b border-border pb-4">
+        <div className="flex items-center space-x-3">
+          <div className="relative h-12 w-12 flex items-center justify-center shrink-0 transition-transform duration-300 hover:scale-105">
+            <img 
+              src="/logo.png" 
+              alt="V.S.B. College Logo" 
+              className="h-full w-full object-contain filter drop-shadow"
+            />
+          </div>
+          <div>
+            <h2 className="text-2xl font-extrabold tracking-tight">V.S.B. College of Engineering Technical Campus</h2>
+            <p className="text-xs text-muted-foreground font-medium">LeetCode Progress Monitoring & Analytics System</p>
+          </div>
+        </div>
       </div>
       
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
+        <Card className="shadow-sm border-border/70">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Students</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -147,7 +203,7 @@ export default function Dashboard() {
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="shadow-sm border-border/70">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Active Accounts</CardTitle>
             <Activity className="h-4 w-4 text-muted-foreground" />
@@ -157,45 +213,59 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="shadow-sm border-border/70">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Problems Solved</CardTitle>
             <Code className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalSolved}</div>
+            <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{totalSolved}</div>
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="shadow-sm border-border/70">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Solved Today</CardTitle>
             <CheckCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalToday}</div>
+            <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">+{totalToday}</div>
           </CardContent>
         </Card>
       </div>
 
+      {/* Analytics Dashboard with Donut Chart, Difficulty Breakdown & Contribution Grid */}
+      <AnalyticsDashboard students={students || []} />
+
+      {/* User Overview Table Section */}
       <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-1">
-        <Card className="col-span-1">
+        <Card className="col-span-1 shadow-sm border-border/70">
           <CardHeader>
-            <CardTitle>Students Overview</CardTitle>
+            <CardTitle className="text-xl font-bold">User Overview</CardTitle>
           </CardHeader>
           <CardContent>
             <TableToolbar
               globalFilter={globalFilter}
               setGlobalFilter={setGlobalFilter}
+              departmentFilter={departmentFilter}
+              setDepartmentFilter={setDepartmentFilter}
+              departments={departments}
+              selectedCount={selectedIds.length}
+              onDeleteSelected={handleDeleteSelected}
               onImport={handleImport}
               onExport={handleExport}
               onAddStudent={handleAddStudent}
             />
-            {isLoading ? <p>Loading...</p> : (
+            {isLoading ? (
+              <div className="p-8 text-center text-muted-foreground">Loading users...</div>
+            ) : (
               <StudentsTable 
                 data={students || []} 
                 onUpdate={handleUpdate}
+                onDeleteSingle={handleDeleteSingle}
+                onSelectionChange={setSelectedIds}
                 globalFilter={globalFilter}
+                departmentFilter={departmentFilter}
               />
             )}
           </CardContent>

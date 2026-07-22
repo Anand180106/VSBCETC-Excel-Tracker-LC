@@ -46,11 +46,10 @@ export default function LoginPage() {
           
           {/* Logo Section */}
           <div className="flex flex-col items-center justify-center mb-10">
-            {/* The user will drop their logo here */}
-            <div className="h-32 w-32 bg-white rounded-lg shadow-sm border border-gray-100 p-2 flex items-center justify-center mb-6 overflow-hidden">
+            <div className="w-48 h-48 bg-white rounded-2xl shadow-md border border-gray-100 p-3 flex items-center justify-center mb-6 hover:scale-105 transition-transform duration-300">
               <img 
                 src="/logo.png" 
-                alt="VSB College Logo" 
+                alt="V.S.B. College of Engineering Technical Campus Logo" 
                 className="h-full w-full object-contain"
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%23cbd5e1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>';
@@ -68,24 +67,26 @@ export default function LoginPage() {
           {/* Form Section */}
           <form onSubmit={handleLogin} className="space-y-6">
             <div className="flex flex-col space-y-1">
-              <label className="text-sm text-gray-500 font-medium">Username</label>
+              <label className="text-sm text-gray-600 font-medium">Username</label>
               <Input
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
+                placeholder="Enter your username"
                 required
-                className="border-0 border-b border-gray-300 rounded-none px-0 py-2 shadow-none focus-visible:ring-0 focus-visible:border-orange-500 bg-transparent"
+                className="border-0 border-b-2 border-gray-300 rounded-none px-1 py-2 text-slate-900 placeholder:text-gray-400 font-medium text-base shadow-none focus-visible:ring-0 focus-visible:border-orange-500 bg-transparent"
               />
             </div>
             
             <div className="flex flex-col space-y-1 pt-2">
-              <label className="text-sm text-gray-500 font-medium">Password</label>
+              <label className="text-sm text-gray-600 font-medium">Password</label>
               <Input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter your password"
                 required
-                className="border-0 border-b border-gray-300 rounded-none px-0 py-2 shadow-none focus-visible:ring-0 focus-visible:border-orange-500 bg-transparent"
+                className="border-0 border-b-2 border-gray-300 rounded-none px-1 py-2 text-slate-900 placeholder:text-gray-400 font-medium text-base shadow-none focus-visible:ring-0 focus-visible:border-orange-500 bg-transparent"
               />
             </div>
 

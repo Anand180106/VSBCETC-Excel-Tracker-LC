@@ -1,13 +1,10 @@
 import requests
+from datetime import datetime, timezone
 
 def fetch_leetcode_stats(username: str):
     url = "https://leetcode.com/graphql"
     query = """
     query getUserProfile($username: String!) {
-      allQuestionsCount {
-        difficulty
-        count
-      }
       matchedUser(username: $username) {
         submitStats {
           acSubmissionNum {
@@ -17,11 +14,17 @@ def fetch_leetcode_stats(username: str):
           }
         }
       }
+      recentSubmissionList(username: $username, limit: 20) {
+        title
+        titleSlug
+        timestamp
+        statusDisplay
+      }
     }
     """
     variables = {"username": username}
     headers = {
-        "User-Agent": "Mozilla/5.0",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         "Referer": f"https://leetcode.com/{username}/"
     }
     try:
@@ -36,9 +39,24 @@ def fetch_leetcode_stats(username: str):
             return None
             
         stats = data["data"]["matchedUser"]["submitStats"]["acSubmissionNum"]
+        recent_submissions = data["data"].get("recentSubmissionList", []) or []
+        
+        # Calculate solved_today based on unique accepted problems solved today
+        today_date = datetime.now(timezone.utc).date()
+        today_solved_slugs = set()
+        
+        for sub in recent_submissions:
+            if sub.get("statusDisplay") == "Accepted":
+                try:
+                    sub_time = datetime.fromtimestamp(int(sub.get("timestamp", 0)), tz=timezone.utc).date()
+                    if sub_time == today_date:
+                        today_solved_slugs.add(sub.get("titleSlug", sub.get("title")))
+                except Exception:
+                    pass
         
         result = {
             "total_solved": 0,
+            "solved_today": len(today_solved_slugs),
             "easy_solved": 0,
             "medium_solved": 0,
             "hard_solved": 0,

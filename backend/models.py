@@ -28,6 +28,7 @@ class LeetCodeStats(Base):
     student_id = Column(Integer, ForeignKey("students.id"), unique=True)
     
     total_solved = Column(Integer, default=0)
+    solved_today = Column(Integer, default=0)
     easy_solved = Column(Integer, default=0)
     medium_solved = Column(Integer, default=0)
     hard_solved = Column(Integer, default=0)
