@@ -9,26 +9,40 @@ from routers import students, auth
 from services.leetcode import fetch_leetcode_stats
 from datetime import datetime
 
-models.Base.metadata.create_all(bind=engine)
+try:
+    models.Base.metadata.create_all(bind=engine)
+except Exception as e:
+    print(f"Error creating database tables on startup: {e}")
 
 app = FastAPI(title="LPMAS API")
 
-CORS_ORIGINS = os.getenv("CORS_ORIGINS", "*").split(",")
+raw_origins = os.getenv("CORS_ORIGINS", "*").split(",")
+CORS_ORIGINS = [o.strip().rstrip("/") for o in raw_origins if o.strip()]
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=CORS_ORIGINS,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+if "*" in CORS_ORIGINS or not CORS_ORIGINS:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=False,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+else:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=CORS_ORIGINS,
+        allow_origin_regex=r"https://.*\.vercel\.app",
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc):
     print(f"Global exception: {exc}")
     return JSONResponse(
         status_code=500,
-        content={"detail": "Internal Server Error"},
+        content={"detail": str(exc) if os.getenv("DEBUG") else "Internal Server Error"},
     )
 
 app.include_router(auth.router)

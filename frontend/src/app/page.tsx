@@ -21,7 +21,7 @@ const getAuthHeaders = () => {
 }
 
 const fetchStudents = async () => {
-  const res = await axios.get(`${API_URL}/students/`, { headers: getAuthHeaders() })
+  const res = await axios.get(`${API_URL}/students/`, { headers: getAuthHeaders(), timeout: 45000 })
   return Array.isArray(res.data) ? res.data : []
 }
 
@@ -46,7 +46,8 @@ export default function Dashboard() {
   const { data: students, isLoading, error } = useQuery({
     queryKey: ["students"],
     queryFn: fetchStudents,
-    retry: false
+    retry: 2,
+    retryDelay: 3000
   })
 
   useEffect(() => {
@@ -132,7 +133,7 @@ export default function Dashboard() {
         leetcode_username: String(data.leetcode_username || "").trim(),
         email: data.email ? String(data.email).trim() : `${cleanRegNo}@college.edu`
       }
-      return axios.post(`${API_URL}/students/`, cleanData, { headers: getAuthHeaders() })
+      return axios.post(`${API_URL}/students/`, cleanData, { headers: getAuthHeaders(), timeout: 45000 })
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["students"] })
@@ -140,9 +141,15 @@ export default function Dashboard() {
     onError: (err: any) => {
       console.error("Add student failed:", err)
       queryClient.invalidateQueries({ queryKey: ["students"] })
-      const detail = err.response?.data?.detail
-      const msg = typeof detail === "string" ? detail : (detail ? JSON.stringify(detail) : err.message)
-      alert(`Failed to add member: ${msg}`)
+      let msg = err.response?.data?.detail
+      if (!msg) {
+        if (err.code === "ERR_NETWORK" || err.message?.includes("Network Error")) {
+          msg = `Unable to connect to backend server at ${API_URL}.\nIf your backend is hosted on Render free tier, the server takes ~30 seconds to wake up from sleep mode. Please wait 15 seconds and try again.`
+        } else {
+          msg = err.message || "Failed to add member"
+        }
+      }
+      alert(typeof msg === "string" ? msg : JSON.stringify(msg))
     }
   })
 
