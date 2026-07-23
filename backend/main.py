@@ -39,10 +39,12 @@ else:
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc):
-    print(f"Global exception: {exc}")
+    import traceback
+    print(f"Global exception on {request.url}: {exc}")
+    traceback.print_exc()
     return JSONResponse(
         status_code=500,
-        content={"detail": str(exc) if os.getenv("DEBUG") else "Internal Server Error"},
+        content={"detail": str(exc)},
     )
 
 app.include_router(auth.router)

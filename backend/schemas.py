@@ -3,39 +3,46 @@ from typing import Optional, List
 from datetime import datetime
 
 class LeetCodeStatsBase(BaseModel):
-    total_solved: int = 0
-    solved_today: int = 0
-    easy_solved: int = 0
-    medium_solved: int = 0
-    hard_solved: int = 0
-    current_streak: int = 0
-    longest_streak: int = 0
+    total_solved: Optional[int] = 0
+    solved_today: Optional[int] = 0
+    easy_solved: Optional[int] = 0
+    medium_solved: Optional[int] = 0
+    hard_solved: Optional[int] = 0
+    current_streak: Optional[int] = 0
+    longest_streak: Optional[int] = 0
     contest_rating: Optional[float] = None
     ranking: Optional[int] = None
     acceptance_rate: Optional[float] = None
 
 class LeetCodeStats(LeetCodeStatsBase):
     id: int
-    last_updated: datetime
+    last_updated: Optional[datetime] = None
     class Config:
         from_attributes = True
 
 class StudentBase(BaseModel):
     name: str
     register_number: str
-    department: str
-    year: int
-    section: str
-    email: EmailStr
+    department: Optional[str] = "Other"
+    year: Optional[int] = 1
+    section: Optional[str] = "A"
+    email: Optional[str] = None
     leetcode_username: str
 
 class StudentCreate(StudentBase):
     pass
 
-class Student(StudentBase):
+class Student(BaseModel):
     id: int
-    is_active: bool
-    created_at: datetime
+    name: str
+    register_number: str
+    department: Optional[str] = "Other"
+    year: Optional[int] = 1
+    section: Optional[str] = "A"
+    email: Optional[str] = None
+    leetcode_username: str
+    is_active: Optional[bool] = True
+    created_at: Optional[datetime] = None
     leetcode_stats: Optional[LeetCodeStats] = None
     class Config:
         from_attributes = True
