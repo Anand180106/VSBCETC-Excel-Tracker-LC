@@ -30,17 +30,20 @@ def create_student(student: schemas.StudentCreate, db: Session = Depends(get_db)
     db.commit()
     db.refresh(new_student)
     
-    # Immediately fetch initial stats
-    stats = fetch_leetcode_stats(new_student.leetcode_username)
-    if stats:
-        new_stats = models.LeetCodeStats(
-            student_id=new_student.id,
-            **stats
-        )
-        db.add(new_stats)
-        db.commit()
-        db.refresh(new_student)
-    
+    # Safely fetch initial stats wrapped in try/except so LeetCode API issues never fail student creation
+    try:
+        stats = fetch_leetcode_stats(new_student.leetcode_username)
+        if stats:
+            new_stats = models.LeetCodeStats(
+                student_id=new_student.id,
+                **stats
+            )
+            db.add(new_stats)
+            db.commit()
+            db.refresh(new_student)
+    except Exception as e:
+        print(f"Initial LeetCode stats fetch error for {new_student.leetcode_username}: {e}")
+
     return new_student
 
 @router.get("/", response_model=List[schemas.Student])

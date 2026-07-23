@@ -139,6 +139,7 @@ export default function Dashboard() {
     },
     onError: (err: any) => {
       console.error("Add student failed:", err)
+      queryClient.invalidateQueries({ queryKey: ["students"] })
       const detail = err.response?.data?.detail
       const msg = typeof detail === "string" ? detail : (detail ? JSON.stringify(detail) : err.message)
       alert(`Failed to add member: ${msg}`)
