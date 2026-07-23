@@ -31,9 +31,16 @@ export function AddStudentDialog({ onAdd }: AddStudentDialogProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    const cleanRegNo = formData.register_number.trim().replace(/[^a-zA-Z0-9]/g, "") || "user"
+    const cleanEmail = formData.email ? formData.email.trim() : `${cleanRegNo}@college.edu`
+    
     onAdd({
       ...formData,
-      email: formData.email || `${formData.register_number}@college.edu`
+      name: formData.name.trim(),
+      register_number: formData.register_number.trim(),
+      department: formData.department.trim(),
+      leetcode_username: formData.leetcode_username.trim(),
+      email: cleanEmail
     })
     setOpen(false)
     setFormData({

@@ -87,29 +87,61 @@ export default function Dashboard() {
 
   const importStudentsMutation = useMutation({
     mutationFn: async (data: any[]) => {
-      const payload = data.map(row => ({
-        name: row.Name || row.name,
-        register_number: row['Reg No'] || row.register_number,
-        department: row.Dept || row.department,
-        year: parseInt(row.Year || row.year) || 1,
-        section: row.Section || row.section || "A",
-        email: row.Email || row.email || `${row['Reg No'] || row.register_number}@college.edu`,
-        leetcode_username: row['LeetCode ID'] || row.leetcode_username,
-      })).filter(s => s.name && s.register_number && s.leetcode_username)
+      const payload = data.map(row => {
+        const regNo = String(row['Reg No'] || row.register_number || "").trim()
+        const cleanRegNo = regNo.replace(/[^a-zA-Z0-9]/g, "") || "user"
+        const rawEmail = row.Email || row.email
+        return {
+          name: String(row.Name || row.name || "").trim(),
+          register_number: regNo,
+          department: String(row.Dept || row.department || "").trim(),
+          year: parseInt(row.Year || row.year) || 1,
+          section: String(row.Section || row.section || "A").trim(),
+          email: rawEmail ? String(rawEmail).trim() : `${cleanRegNo}@college.edu`,
+          leetcode_username: String(row['LeetCode ID'] || row.leetcode_username || "").trim(),
+        }
+      }).filter(s => s.name && s.register_number && s.leetcode_username)
 
       return axios.post(`${API_URL}/students/bulk-import`, payload, { headers: getAuthHeaders() })
     },
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ["students"] })
+      if (res.data?.errors?.length > 0) {
+        alert(`Imported ${res.data.successful} member(s). Notes: ${res.data.errors.join("; ")}`)
+      }
+    },
+    onError: (err: any) => {
+      console.error("Import students failed:", err)
+      const detail = err.response?.data?.detail
+      const msg = typeof detail === "string" ? detail : (detail ? JSON.stringify(detail) : err.message)
+      alert(`Failed to import members: ${msg}`)
     }
   })
 
   const addStudentMutation = useMutation({
     mutationFn: async (data: any) => {
-      return axios.post(`${API_URL}/students/`, data, { headers: getAuthHeaders() })
+      const regNo = String(data.register_number || "").trim()
+      const cleanRegNo = regNo.replace(/[^a-zA-Z0-9]/g, "") || "user"
+      const cleanData = {
+        ...data,
+        name: String(data.name || "").trim(),
+        register_number: regNo,
+        department: String(data.department || "").trim(),
+        year: parseInt(data.year) || 1,
+        section: String(data.section || "A").trim(),
+        leetcode_username: String(data.leetcode_username || "").trim(),
+        email: data.email ? String(data.email).trim() : `${cleanRegNo}@college.edu`
+      }
+      return axios.post(`${API_URL}/students/`, cleanData, { headers: getAuthHeaders() })
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["students"] })
+    },
+    onError: (err: any) => {
+      console.error("Add student failed:", err)
+      const detail = err.response?.data?.detail
+      const msg = typeof detail === "string" ? detail : (detail ? JSON.stringify(detail) : err.message)
+      alert(`Failed to add member: ${msg}`)
     }
   })
 
