@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Activity, Users, CheckCircle, Code } from "lucide-react"
 import { StudentsTable } from "@/components/students-table"
 import { TableToolbar } from "@/components/table-toolbar"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import Papa from "papaparse"
 import { useRouter } from "next/navigation"
 
@@ -31,6 +31,10 @@ export default function Dashboard() {
   const [globalFilter, setGlobalFilter] = useState("")
   const [departmentFilter, setDepartmentFilter] = useState("ALL")
   const [selectedIds, setSelectedIds] = useState<number[]>([])
+
+  const handleSelectionChange = useCallback((ids: number[]) => {
+    setSelectedIds(ids)
+  }, [])
 
   useEffect(() => {
     const token = localStorage.getItem("token")
@@ -266,7 +270,7 @@ export default function Dashboard() {
                 data={safeStudents} 
                 onUpdate={handleUpdate}
                 onDeleteSingle={handleDeleteSingle}
-                onSelectionChange={setSelectedIds}
+                onSelectionChange={handleSelectionChange}
                 globalFilter={globalFilter}
                 departmentFilter={departmentFilter}
               />

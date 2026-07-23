@@ -9,7 +9,7 @@ import {
   SortingState,
   RowSelectionState,
 } from "@tanstack/react-table"
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useRef } from "react"
 import {
   Table,
   TableBody,
@@ -197,12 +197,21 @@ export function StudentsTable({
   })
 
   // Notify parent of selected row IDs when selection changes
+  const selectedIdsStr = useMemo(() => {
+    const selectedIndices = Object.keys(rowSelection).filter(key => rowSelection[key])
+    return selectedIndices.map(idx => displayData[Number(idx)]?.id).filter(Boolean).join(",")
+  }, [rowSelection, displayData])
+
+  const prevSelectedIdsStrRef = useRef<string | null>(null)
+
   useEffect(() => {
     if (!onSelectionChange) return
-    const selectedIndices = Object.keys(rowSelection).filter(key => rowSelection[key])
-    const selectedIds = selectedIndices.map(idx => displayData[Number(idx)]?.id).filter(Boolean) as number[]
+    if (prevSelectedIdsStrRef.current === selectedIdsStr) return
+    prevSelectedIdsStrRef.current = selectedIdsStr
+
+    const selectedIds = selectedIdsStr ? selectedIdsStr.split(",").map(Number) : []
     onSelectionChange(selectedIds)
-  }, [rowSelection, displayData])
+  }, [selectedIdsStr, onSelectionChange])
 
   return (
     <div className="rounded-md border">
