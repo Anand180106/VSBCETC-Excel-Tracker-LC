@@ -74,6 +74,38 @@ def update_leetcode_stats():
     finally:
         db.close()
 
+from sqlalchemy import text
+
+def run_db_migrations():
+    print("Running database migrations for missing columns...")
+    db = SessionLocal()
+    try:
+        migrations = [
+            "ALTER TABLE leetcode_stats ADD COLUMN IF NOT EXISTS solved_today INTEGER DEFAULT 0;",
+            "ALTER TABLE leetcode_stats ADD COLUMN IF NOT EXISTS easy_solved INTEGER DEFAULT 0;",
+            "ALTER TABLE leetcode_stats ADD COLUMN IF NOT EXISTS medium_solved INTEGER DEFAULT 0;",
+            "ALTER TABLE leetcode_stats ADD COLUMN IF NOT EXISTS hard_solved INTEGER DEFAULT 0;",
+            "ALTER TABLE leetcode_stats ADD COLUMN IF NOT EXISTS current_streak INTEGER DEFAULT 0;",
+            "ALTER TABLE leetcode_stats ADD COLUMN IF NOT EXISTS longest_streak INTEGER DEFAULT 0;",
+            "ALTER TABLE leetcode_stats ADD COLUMN IF NOT EXISTS contest_rating FLOAT;",
+            "ALTER TABLE leetcode_stats ADD COLUMN IF NOT EXISTS ranking INTEGER;",
+            "ALTER TABLE leetcode_stats ADD COLUMN IF NOT EXISTS acceptance_rate FLOAT;",
+            "ALTER TABLE leetcode_stats ADD COLUMN IF NOT EXISTS last_updated TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;",
+            "ALTER TABLE students ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;",
+            "ALTER TABLE students ADD COLUMN IF NOT EXISTS section VARCHAR DEFAULT 'A';",
+        ]
+        for statement in migrations:
+            try:
+                db.execute(text(statement))
+                db.commit()
+            except Exception as m_err:
+                db.rollback()
+                print(f"Migration note: {m_err}")
+    except Exception as e:
+        print(f"Database migration error: {e}")
+    finally:
+        db.close()
+
 def create_initial_admin():
     db = SessionLocal()
     try:
@@ -94,6 +126,7 @@ def create_initial_admin():
 
 @app.on_event("startup")
 def startup_event():
+    run_db_migrations()
     create_initial_admin()
     scheduler = BackgroundScheduler()
     scheduler.add_job(update_leetcode_stats, 'interval', minutes=30)
