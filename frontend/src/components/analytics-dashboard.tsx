@@ -16,6 +16,7 @@ const HARD_COLOR = "#ef4444"
 export function AnalyticsDashboard({ students = [] }: AnalyticsDashboardProps) {
   // Aggregate statistics across all users
   const stats = useMemo(() => {
+    const safeStudents = Array.isArray(students) ? students : []
     let totalSolved = 0
     let totalEasy = 0
     let totalMedium = 0
@@ -25,7 +26,7 @@ export function AnalyticsDashboard({ students = [] }: AnalyticsDashboardProps) {
 
     const deptMap: Record<string, { total: number; today: number; count: number }> = {}
 
-    students.forEach((s) => {
+    safeStudents.forEach((s) => {
       const sStats = s.leetcode_stats || {}
       const total = sStats.total_solved || 0
       const easy = sStats.easy_solved || 0
@@ -59,13 +60,13 @@ export function AnalyticsDashboard({ students = [] }: AnalyticsDashboardProps) {
     }))
 
     // Top 3 performers
-    const sortedUsers = [...students].sort(
+    const sortedUsers = [...safeStudents].sort(
       (a, b) => (b.leetcode_stats?.total_solved || 0) - (a.leetcode_stats?.total_solved || 0)
     )
     const topPerformers = sortedUsers.slice(0, 3)
 
     // Today's active solvers
-    const todaySolvers = students
+    const todaySolvers = safeStudents
       .filter((s) => (s.leetcode_stats?.solved_today || 0) > 0)
       .sort((a, b) => (b.leetcode_stats?.solved_today || 0) - (a.leetcode_stats?.solved_today || 0))
 

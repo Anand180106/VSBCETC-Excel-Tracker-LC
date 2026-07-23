@@ -12,7 +12,8 @@ import { useRouter } from "next/navigation"
 import { exportStyledExcelReport } from "@/lib/excel-export"
 import { AnalyticsDashboard } from "@/components/analytics-dashboard"
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
+const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
+const API_URL = rawApiUrl.replace(/\/+$/, "")
 
 const getAuthHeaders = () => {
   const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null
@@ -21,7 +22,7 @@ const getAuthHeaders = () => {
 
 const fetchStudents = async () => {
   const res = await axios.get(`${API_URL}/students/`, { headers: getAuthHeaders() })
-  return res.data
+  return Array.isArray(res.data) ? res.data : []
 }
 
 export default function Dashboard() {
@@ -133,13 +134,15 @@ export default function Dashboard() {
     addStudentMutation.mutate(data)
   }
 
+  const safeStudents = Array.isArray(students) ? students : []
+
   const departments = Array.from(
-    new Set((students || []).map((s: any) => s.department).filter(Boolean))
+    new Set(safeStudents.map((s: any) => s.department).filter(Boolean))
   ) as string[]
 
   const handleExport = () => {
-    if (!students) return
-    const exportData = students.map((s: any) => ({
+    if (safeStudents.length === 0) return
+    const exportData = safeStudents.map((s: any) => ({
       Name: s.name,
       'Reg No': s.register_number,
       Dept: s.department,
@@ -161,13 +164,13 @@ export default function Dashboard() {
     link.click()
   }
 
-  const totalStudents = students?.length || 0
-  const activeStudents = students?.filter((s: any) => s.is_active).length || 0
+  const totalStudents = safeStudents.length
+  const activeStudents = safeStudents.filter((s: any) => s.is_active).length
   
   let totalSolved = 0
   let totalToday = 0 
   
-  students?.forEach((s: any) => {
+  safeStudents.forEach((s: any) => {
       if (s.leetcode_stats) {
           totalSolved += s.leetcode_stats.total_solved || 0
           totalToday += s.leetcode_stats.solved_today || 0
@@ -235,7 +238,7 @@ export default function Dashboard() {
       </div>
 
       {/* Analytics Dashboard with Donut Chart, Difficulty Breakdown & Contribution Grid */}
-      <AnalyticsDashboard students={students || []} />
+      <AnalyticsDashboard students={safeStudents} />
 
       {/* User Overview Table Section */}
       <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-1">
@@ -260,7 +263,7 @@ export default function Dashboard() {
               <div className="p-8 text-center text-muted-foreground">Loading users...</div>
             ) : (
               <StudentsTable 
-                data={students || []} 
+                data={safeStudents} 
                 onUpdate={handleUpdate}
                 onDeleteSingle={handleDeleteSingle}
                 onSelectionChange={setSelectedIds}

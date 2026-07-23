@@ -65,8 +65,9 @@ export function StudentsTable({
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
 
   const displayData = useMemo(() => {
-    if (!departmentFilter || departmentFilter === "ALL") return data;
-    return data.filter(item => String(item.department || "").trim().toUpperCase() === departmentFilter.trim().toUpperCase());
+    const safeData = Array.isArray(data) ? data : []
+    if (!departmentFilter || departmentFilter === "ALL") return safeData;
+    return safeData.filter(item => String(item.department || "").trim().toUpperCase() === departmentFilter.trim().toUpperCase());
   }, [data, departmentFilter]);
 
   const columns = [

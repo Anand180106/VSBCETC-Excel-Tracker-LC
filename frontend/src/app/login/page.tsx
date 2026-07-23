@@ -6,7 +6,8 @@ import axios from "axios"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
+const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
+const API_URL = rawApiUrl.replace(/\/+$/, "")
 
 export default function LoginPage() {
   const [username, setUsername] = useState("")
@@ -27,13 +28,27 @@ export default function LoginPage() {
       const res = await axios.post(`${API_URL}/auth/token`, params, {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded'
-        }
+        },
+        timeout: 15000
       })
       
-      localStorage.setItem("token", res.data.access_token)
-      router.push("/")
+      if (res.data && res.data.access_token) {
+        localStorage.setItem("token", res.data.access_token)
+        router.push("/")
+      } else {
+        setError("Login response missing access token.")
+        setLoading(false)
+      }
     } catch (err: any) {
-      setError(err.response?.data?.detail || "Login failed")
+      console.error("Login attempt failed:", err)
+      if (err.response?.data?.detail) {
+        const detail = err.response.data.detail
+        setError(typeof detail === "string" ? detail : JSON.stringify(detail))
+      } else if (err.code === "ERR_NETWORK" || err.message?.includes("Network Error")) {
+        setError(`Failed to connect to backend server (${API_URL}). Please verify your backend server is active and CORS is configured.`)
+      } else {
+        setError(err.message || "Login failed. Please verify credentials.")
+      }
       setLoading(false)
     }
   }
